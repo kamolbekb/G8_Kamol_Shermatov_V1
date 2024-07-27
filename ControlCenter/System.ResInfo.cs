@@ -12,6 +12,7 @@ public partial class System
         
         RestaurantInfo restaurantInfo = RestaurantInfo.Instance;
         restaurantInfo.Info = info;
+        SaveData();
     }
 
     public void GetInfo()
@@ -24,5 +25,6 @@ public partial class System
     {
         RestaurantInfo About = RestaurantInfo.Instance;
         About.Info = null;
+        SaveData();
     }
 }

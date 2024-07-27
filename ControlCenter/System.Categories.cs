@@ -4,30 +4,22 @@ namespace Exam.ControlCenter;
 
 public partial class System
 {
-    public void GetCategoryFromJson(string relativePath)
-    {
-        string basePath = AppDomain.CurrentDomain.BaseDirectory;
-        
-        categoryPath = Path.Combine(basePath, relativePath);
-        categories = new List<Categories>();
-        
-        LoadCategoriesFromFile();
-    }
-    
     public void AddCategory(string category)
     {
         if (string.IsNullOrWhiteSpace(category))
         {
             throw new Exception();
         }
-        int id = categories.Count>0?categories.Max(c => c.Id) + 1 : 1;
-        categories.Add(new Categories{Id = id,Category = category});
-        SaveCategoryToFile();
+        categories.Add(new Categories(categoryCounter++,category));
+        SaveData();
+        Console.WriteLine("Category added successfully!\nPress Any Key To Continue");
+        
     }
 
     public void UpdateCategory(int id, string categoryName)
     {
         var category = categories.FirstOrDefault(c => c.Id == id);
+        
         if (category == null)
         {
             throw new ArgumentException("Category not found", nameof(id));
@@ -35,22 +27,34 @@ public partial class System
         if (!string.IsNullOrWhiteSpace(categoryName))
         {
             category.Category = categoryName;
+            SaveData();
+            Console.WriteLine("Successsfully updated\nPlease tap any key to continue)");
         }
-        
-        SaveCategoryToFile();
     }
 
     public void DeleteCategory(int id)
     {
         var category = categories.FirstOrDefault(c => c.Id == id);
-        if (category == null)
+        if (category != null)
         {
-            throw new ArgumentException("Category not found", nameof(id));
+            Console.WriteLine($"Are you sure you want to delete the category '{category.Category}' and all associated meals? (yes/no)");
+            if (Console.ReadLine()?.Trim().ToLower() == "yes")
+            {
+                menus.RemoveAll(m => m.CategoryId == id);
+                categories.Remove(category);
+                SaveData();
+                Console.WriteLine("Category and associated meals deleted successfully!\nPress any Key to continue");
+            }
+            else
+            {
+                Console.WriteLine("Deletion canceled.");
+            }
         }
-
-        categories.Remove(category);
+        else
+        {
+            Console.WriteLine("Category not found!");
+        }
         
-        SaveCategoryToFile();
     }
 
     public void GetCategories()
@@ -60,7 +64,8 @@ public partial class System
             Console.WriteLine("No available catigories...");
             return;
         }
-        
+
+        Console.WriteLine("Categories:\n");
         foreach (var category in categories)
         {
             Console.WriteLine($"{category.Id}. {category.Category} ");
@@ -68,37 +73,4 @@ public partial class System
         
     }
     
-    private void LoadCategoriesFromFile()
-    {
-        if (File.Exists(categoryPath))
-        {
-            string existingData = File.ReadAllText(categoryPath);
-            if (!string.IsNullOrEmpty(existingData))
-            {
-                categories = JsonSerializer.Deserialize<List<Categories>>(existingData);
-            }
-        }
-    }
-    
-    
-    private void SaveCategoryToFile()
-    {
-        string jsonString = JsonSerializer.Serialize(categories, new JsonSerializerOptions { WriteIndented = true });
-
-       
-        string directoryPath = Path.GetDirectoryName(categoryPath);
-        if (!Directory.Exists(directoryPath))
-        {
-            Directory.CreateDirectory(directoryPath);
-        }
-
-        try
-        {
-            File.WriteAllText(categoryPath, jsonString);
-        }
-        catch (IOException ex)
-        {
-            throw new Exception("An error occurred while writing the JSON file.", ex);
-        }
-    }
 }

@@ -1,113 +1,63 @@
+using System.Runtime.InteropServices.JavaScript;
 using System.Text.Json;
 
 namespace Exam.ControlCenter;
 
 public partial class System
 {
-    public void GetMenuFromJson(string relativePath)
-    {
-        string basePath = AppDomain.CurrentDomain.BaseDirectory;
-        
-        menuPath = Path.Combine(basePath, relativePath);
-        menus = new List<Menu>();
-        
-        LoadMenuFromFile();
-    }
-    
     public void AddMelsToMenu(string name)
     {
-        if (string.IsNullOrWhiteSpace(name))
+        GetCategories();
+        Console.Write("Enter Caetegory ID to add new meal in:");
+        if(int.TryParse(Console.ReadLine(),out int categoryId)&& categories.Any(c=>c.Id==categoryId))
         {
-            throw new Exception();
+            menus.Add(new Menu(menuCounter++,name,categoryId));
+            SaveData();
+            Console.WriteLine("Meal successfully added!\nPlease press any button to continue)");
         }
-        int id = this.menus.Count>0?menus.Max(c => c.Id) + 1 : 1;
-        menus.Add(new Menu{Id = id,Name = name});
-        SaveMenuToFile();
-    }
-
-    public void SearchMeals(int id, string Name)
-    {
-        foreach (var Meal in menus)
+        else
         {
-            if (Meal.Name == Name)
-            {
-                
-            }
+            Console.WriteLine("Invalid category ID!");
         }
     }
-    public void UpdateMenu(int id, string menuName)
+    public void UpdateMenu(int id, string menuName, int categoryId)
     {
-        var menu = menus.FirstOrDefault(c => c.Id == id);
-        if (menu == null)
-        {
-            throw new ArgumentException("Meal not found", nameof(id));
-        }
-        if (!string.IsNullOrWhiteSpace(menuName))
+        var menu = menus.FirstOrDefault(m => m.Id == id);
+        if (menu != null && categories.Any(c => c.Id == categoryId))
         {
             menu.Name = menuName;
+            menu.CategoryId = categoryId;
+            SaveData();
+            Console.WriteLine("\nMenu Updated Successfully!\nPress any button to continue");
         }
-        
-        SaveMenuToFile();
+        else
+        {
+            Console.WriteLine("Menu or category not found");
+        }
     }
 
     public void DeleteMealsFromMenu(int id)
     {
-        var menu = menus.FirstOrDefault(c => c.Id == id);
-        if (menu == null)
+        var menu = menus.FirstOrDefault(m => m.Id == id);
+        if (menu != null)
         {
-            throw new ArgumentException("Menu not found", nameof(id));
+            menus.Remove(menu);
+            SaveData();
+            Console.WriteLine("\nMenu deleted successfully!\nPress any button to continue");
         }
-
-        menus.Remove(menu);
-        
-        SaveMenuToFile();
+        else
+        {
+            Console.WriteLine("Menu not found");
+        }
     }
 
     public void GetMenu()
     {
-        if (menus.Count == 0)
-        {
-            Console.WriteLine("No available dishes...");
-            return;
-        }
-        
+        Console.WriteLine("Menu:");
         foreach (var menu in menus)
         {
-            Console.WriteLine($"{menu.Id}. {menu.Name} ");
-        }
-        
-    }
-    
-    private void LoadMenuFromFile()
-    {
-        if (File.Exists(menuPath))
-        {
-            string existingData = File.ReadAllText(categoryPath);
-            if (!string.IsNullOrEmpty(existingData))
-            {
-                menus = JsonSerializer.Deserialize<List<Menu>>(existingData);
-            }
-        }
-    }
-    
-    private void SaveMenuToFile()
-    {
-        string jsonString = JsonSerializer.Serialize(menus, new JsonSerializerOptions { WriteIndented = true });
-
-       
-        string directoryPath = Path.GetDirectoryName(menuPath);
-        if (!Directory.Exists(directoryPath))
-        {
-            Directory.CreateDirectory(directoryPath);
-        }
-
-        try
-        {
-            File.WriteAllText(menuPath, jsonString);
-        }
-        catch (IOException ex)
-        {
-            throw new Exception("An error occurred while writing the JSON file.", ex);
+            var categoryName = categories.FirstOrDefault(c => c.Id == menu.CategoryId)?.Category ?? "Unknown";
+            Console.WriteLine($"{menu.Name} (Category: {categoryName})");
         }
     }
 }
